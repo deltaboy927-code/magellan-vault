@@ -1,0 +1,10 @@
+{
+  "chainId": 56,
+  "networkName": "BNB Smart Chain Mainnet",
+  "contractAddress": "0xb6c9407DE917859f7Bd8FEC2fdBDAb23C3FA6ecA",
+  "runtimeCodeHash": "0x7f9f85869488e3619b8df1865f33bd0306934a38df9db709292cb3ab3a5e7917",
+  "tokenAddress": "0x55d398326f99059fF775485246999027B3197955",
+  "tokenSymbol": "USDT (Binance-Peg BSC-USD)",
+  "tokenDecimals": 18,
+  "deploymentBlock": 128034289
+}

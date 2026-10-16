@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magellan Vault</title>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #101b2d;
+      --panel-alt: #13233e;
+      --card: #0f1d2f;
+      --primary: #37d67a;
+      --primary-dark: #1e9f5d;
+      --accent: #f4b942;
+      --text: #edf4ff;
+      --muted: #a4b3c8;
+      --danger: #ef4444;
+      --border: rgba(255,255,255,0.08);
+      --shadow: 0 20px 40px rgba(0,0,0,0.32);
+    }
+
+    .balance {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin: 12px 0 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(7,17,31,0.45);
+    }
+
+    .history-item a {
+      color: #9de7ba;
+      overflow-wrap: anywhere;
+    }
+
+    select {
+      width: 100%;
+      background: rgba(7,17,31,0.9);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(180deg, #07111f 0%, #0d1729 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: rgba(16, 27, 45, 0.92);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 3vw, 3rem);
+      letter-spacing: 0.03em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .network-badge {
+      background: rgba(55, 214, 122, 0.15);
+      border: 1px solid rgba(55, 214, 122, 0.4);
+      color: #c9f9df;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(19,35,62,0.9), rgba(12,22,39,0.9));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 1.1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-weight: bold;
+      font-size: 0.92rem;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(7,17,31,0.9);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+
+    input:focus {
+      outline: 2px solid rgba(55, 214, 122, 0.35);
+      border-color: rgba(55, 214, 122, 0.6);
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .primary {
+      background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+      color: #06230d;
+    }
+
+    .secondary {
+      background: linear-gradient(180deg, #f6c75a, #d98c1f);
+      color: #1a1408;
+    }
+
+    .danger {
+      background: linear-gradient(180deg, #ff5a5a, #db2b2b);
+      color: white;
+    }
+
+    .ghost {
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .small {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+      white-space: pre-line;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: rgba(148,163,184,0.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div>
+        <h1>Magellan Vault</h1>
+        <div class="subtitle">Vault personnel Binance-Peg BSC-USD — BNB Mainnet uniquement</div>
+      </div>
+      <div class="network-badge" id="networkBadge">BNB Mainnet</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Wallet</h3>
+        <button class="primary" id="connectBtn">Connecter MetaMask</button>
+        <button class="ghost" id="networkBtn" style="margin-top:10px;">Ajouter / basculer vers BNB Mainnet</button>
+        <div id="walletInfo" class="small" style="margin-top:12px;">Portefeuille non connecté</div>
+      </div>
+
+      <div class="card">
+        <h3>Configuration</h3>
+        <label for="contractAddress">Adresse du contrat Magellan</label>
+        <input id="contractAddress" placeholder="0x..." />
+
+        <button class="ghost" id="loadContractBtn">Charger le contrat</button>
+        <div id="deploymentInfo" class="small" style="margin-top:12px;">Aucun contrat configuré.</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Mon solde wallet</h3>
+        <div id="walletBalance" class="balance">—</div>
+        <div class="small">USDT disponibles dans le wallet connecté.</div>
+      </div>
+      <div class="card">
+        <h3>Solde total du coffre</h3>
+        <div id="vaultBalance" class="balance">—</div>
+        <div class="small">Solde commun détenu par le contrat Magellan.</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Déposer</h3>
+        <label for="depositAmount">Montant USDT</label>
+        <input id="depositAmount" type="number" step="0.01" placeholder="1000" />
+        <button class="primary" id="approveDepositBtn" disabled>Approuver + déposer</button>
+        <div class="small" style="margin-top:10px;">Les dépôts sont mutualisés. Seul le propriétaire du contrat peut verrouiller ou retirer le solde commun.</div>
+      </div>
+
+      <div class="card">
+        <h3>Verrouiller</h3>
+        <label for="lockDuration">Durée</label>
+        <input id="lockDuration" type="number" placeholder="86400" />
+        <label for="lockUnit">Unité</label>
+        <select id="lockUnit">
+          <option value="1">Secondes</option>
+          <option value="60">Minutes</option>
+          <option value="3600">Heures</option>
+          <option value="86400">Jours</option>
+        </select>
+        <button class="secondary" id="lockBtn" disabled>Programmer le verrou</button>
+      </div>
+
+      <div class="card">
+        <h3>Retirer</h3>
+        <label for="withdrawAmount">Montant à retirer</label>
+        <input id="withdrawAmount" type="number" step="0.01" placeholder="500" />
+        <button class="danger" id="withdrawBtn" disabled>Retirer</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:22px;">
+      <h3>Informations du vault</h3>
+      <div id="vaultInfo" class="small">Aucune information chargée.</div>
+      <button class="ghost" id="refreshBtn" style="margin-top:14px;">Actualiser</button>
+    </div>
+
+    <div class="card" style="margin-top:22px;">
+      <h3>Mes transactions sur le vault</h3>
+      <div id="transactionHistory" class="small">Connectez votre wallet et chargez le vault pour afficher vos transactions.</div>
+    </div>
+
+    <div class="status" style="margin-top:20px;border-color:rgba(244,185,66,0.45);color:#ffe3a1;">
+      Attention : Binance-Peg BSC-USD est un token peg tiers, pas un USD₮ directement émis par Tether. Le peg et l’émetteur comportent des risques distincts.
+    </div>
+    <div id="status" class="status">En attente de la configuration d’un déploiement vérifié.</div>
+  </div>
+
+  <script type="module">
+    import { ethers } from 'https://cdn.jsdelivr.net/npm/ethers@6.14.0/+esm';
+
+    const MAGELLAN_ABI = [
+      'function deposit(uint256 amount)',
+      'function lock(uint256 duration)',
+      'function withdraw(uint256 amount)',
+      'function getBalance() view returns (uint256)',
+      'function getUnlockTime() view returns (uint256)',
+      'function getTimeRemaining() view returns (uint256)',
+      'function isLockActive() view returns (bool)',
+      'function owner() view returns (address)',
+      'function usdt() view returns (address)',
+      'function lockDuration() view returns (uint256)',
+      'event Deposited(address indexed user, uint256 amount, uint256 totalBalance)',
+      'event Locked(uint256 duration, uint256 unlockTimestamp)',
+      'event Withdrawn(address indexed recipient, uint256 amount, uint256 remainingBalance)'
+    ];
+
+    const ERC20_ABI = [
+      'function approve(address spender, uint256 amount) returns (bool)',
+      'function allowance(address owner, address spender) view returns (uint256)',
+      'function balanceOf(address account) view returns (uint256)',
+      'function decimals() view returns (uint8)',
+      'function symbol() view returns (string)'
+    ];
+
+    const NETWORKS = {
+      56: {
+        chainId: '0x38',
+        chainName: 'BNB Smart Chain Mainnet',
+        rpcUrls: ['https://bsc-dataseed.bnbchain.org'],
+        blockExplorerUrls: ['https://bscscan.com'],
+        nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 }
+      }
+    };
+    const MAINNET_CHAIN_ID = 56;
+    const MAX_LOCK_DURATION = 5 * 365 * 24 * 60 * 60;
+    const DEPLOYMENT_URL = './deployment.json';
+    let deployment = null;
+
+    let provider;
+    let signer;
+    let contract;
+    let token;
+    let tokenDecimals = 18;
+    let tokenSymbol = 'USDT';
+    let verifiedContractAddress = null;
+
+    const statusEl = document.getElementById('status');
+    const walletInfo = document.getElementById('walletInfo');
+    const vaultInfo = document.getElementById('vaultInfo');
+    const transactionHistory = document.getElementById('transactionHistory');
+
+    function setStatus(message, isError = false) {
+      statusEl.textContent = message;
+      statusEl.style.background = isError ? 'rgba(239,68,68,0.14)' : 'rgba(148,163,184,0.08)';
+      statusEl.style.borderColor = isError ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)';
+      statusEl.style.color = isError ? '#fecaca' : '#edf4ff';
+    }
+
+    function getContractAddress() {
+      return document.getElementById('contractAddress').value.trim();
+    }
+
+    async function loadDeploymentConfig() {
+      try {
+        const response = await fetch(DEPLOYMENT_URL, { cache: 'no-store' });
+        if (!response.ok) {
+          deployment = null;
+          return;
+        }
+        const loadedDeployment = await response.json();
+        if (Number(loadedDeployment.chainId) !== MAINNET_CHAIN_ID) {
+          throw new Error('La configuration du vault n’est pas sur BNB Mainnet.');
+        }
+        deployment = loadedDeployment;
+        verifiedContractAddress = null;
+        document.getElementById('networkBadge').textContent =
+          deployment.networkName || `Chain ${deployment.chainId}`;
+        document.querySelector('.subtitle').textContent =
+          `Vault Binance-Peg BSC-USD sur ${deployment.networkName || `chain ${deployment.chainId}`}`;
+        document.getElementById('networkBtn').textContent =
+          `Ajouter / basculer vers ${deployment.networkName || `chain ${deployment.chainId}`}`;
+        if (deployment.contractAddress && ethers.isAddress(deployment.contractAddress)) {
+          document.getElementById('contractAddress').value = deployment.contractAddress;
+          document.getElementById('deploymentInfo').textContent =
+            `Contrat configuré sur ${deployment.networkName || `chain ${deployment.chainId}`}.`;
+        }
+      } catch {
+        deployment = null;
+        document.getElementById('deploymentInfo').textContent =
+          'Aucune configuration de déploiement. Déployez ou configurez le contrat avant utilisation.';
+      }
+    }
+
+    function selectedNetwork() {
+      return NETWORKS[Number(deployment?.chainId || MAINNET_CHAIN_ID)];
+    }
+
+    async function assertMainnet() {
+      if (!provider) throw new Error('Connectez MetaMask pour continuer.');
+      const { chainId } = await provider.getNetwork();
+      if (Number(chainId) !== MAINNET_CHAIN_ID) {
+        throw new Error('Magellan est configuré pour BNB Smart Chain Mainnet uniquement.');
+      }
+    }
+
+    async function ensureConfiguredNetwork() {
+      if (!window.ethereum) return;
+
+      try {
+        const network = selectedNetwork();
+        if (!network) throw new Error('Configuration réseau invalide : seul BNB Mainnet est accepté.');
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== network.chainId) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: network.chainId }]
+            });
+          } catch (switchError) {
+            if (switchError.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [network]
+              });
+            } else {
+              throw switchError;
+            }
+          }
+        }
+        const activeChainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (activeChainId !== network.chainId) {
+          throw new Error(`Sélectionnez le réseau ${network.chainName} dans MetaMask.`);
+        }
+        provider = new ethers.BrowserProvider(window.ethereum);
+      } catch (err) {
+        throw new Error(err?.shortMessage || err?.message || 'Impossible de changer de réseau.');
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        setStatus('MetaMask non détecté. Installez-le pour continuer.', true);
+        return;
+      }
+
+      try {
+        await loadDeploymentConfig();
+        await ensureConfiguredNetwork();
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        walletInfo.textContent = `Connecté : ${address}`;
+        setStatus(`Wallet connecté sur ${selectedNetwork().chainName}.`);
+        if (getContractAddress()) await loadContract();
+      } catch (err) {
+        setStatus(err?.message || 'Connexion MetaMask refusée ou réseau inaccessible.', true);
+      }
+    }
+
+    function getContract(forVerification = false) {
+      const addr = getContractAddress();
+      if (!addr) {
+        setStatus('Aucune adresse de contrat configurée par le déploiement.', true);
+        return null;
+      }
+      if (!deployment?.contractAddress || !ethers.isAddress(deployment.contractAddress)) {
+        setStatus('Configuration de déploiement absente ou invalide. Aucune transaction autorisée.', true);
+        return null;
+      }
+      if (ethers.getAddress(addr) !== ethers.getAddress(deployment.contractAddress)) {
+        setStatus('Adresse différente du contrat de déploiement vérifié. Transaction refusée.', true);
+        return null;
+      }
+      if (!forVerification && verifiedContractAddress !== ethers.getAddress(addr)) {
+        setStatus('Chargez et vérifiez le code du contrat avant toute transaction.', true);
+        return null;
+      }
+      if (!signer) {
+        setStatus('Connectez d’abord MetaMask.', true);
+        return null;
+      }
+      if (!ethers.isAddress(addr)) {
+        setStatus('L’adresse du contrat n’est pas valide.', true);
+        return null;
+      }
+      contract = new ethers.Contract(addr, MAGELLAN_ABI, signer);
+      return contract;
+    }
+
+    async function loadContract() {
+      const c = getContract(true);
+      if (!c) return;
+
+      try {
+        verifiedContractAddress = null;
+        await assertMainnet();
+        const [balance, unlockTime, timeRemaining, isActive, owner, usdtAddress, account] = await Promise.all([
+          c.getBalance(),
+          c.getUnlockTime(),
+          c.getTimeRemaining(),
+          c.isLockActive(),
+          c.owner(),
+          c.usdt(),
+          signer.getAddress()
+        ]);
+
+        const activeNetwork = await provider.getNetwork();
+        if (Number(activeNetwork.chainId) !== MAINNET_CHAIN_ID) {
+          throw new Error('Mauvais réseau : connectez MetaMask à BNB Smart Chain Mainnet.');
+        }
+        const tokenCode = await provider.getCode(usdtAddress);
+        if (tokenCode === '0x') throw new Error('Aucun token déployé à l’adresse configurée dans le contrat.');
+        const vaultCode = await provider.getCode(getContractAddress());
+        if (vaultCode === '0x') throw new Error('Aucun contrat déployé à l’adresse du vault configurée.');
+        if (!deployment?.runtimeCodeHash || ethers.keccak256(vaultCode) !== deployment.runtimeCodeHash) {
+          throw new Error('Le code du contrat ne correspond pas au hash de déploiement configuré. Transactions désactivées.');
+        }
+        verifiedContractAddress = ethers.getAddress(getContractAddress());
+        token = new ethers.Contract(usdtAddress, ERC20_ABI, signer);
+        const [walletTokenBalance, decimals, symbol] = await Promise.all([
+          token.balanceOf(account),
+          token.decimals(),
+          token.symbol()
+        ]);
+        tokenDecimals = Number(decimals);
+        tokenSymbol = symbol;
+        const ownerConnected = ethers.getAddress(account) === ethers.getAddress(owner);
+        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+          document.getElementById(id).disabled = !ownerConnected;
+        }
+        if (deployment?.tokenAddress && ethers.getAddress(deployment.tokenAddress) !== ethers.getAddress(usdtAddress)) {
+          throw new Error('Le token du contrat ne correspond pas au token de la configuration locale.');
+        }
+
+        const unlockDate = Number(unlockTime) === 0 ? 'Non programmé' : new Date(Number(unlockTime) * 1000).toLocaleString();
+        document.getElementById('walletBalance').textContent =
+          `${ethers.formatUnits(walletTokenBalance, tokenDecimals)} ${tokenSymbol}`;
+        document.getElementById('vaultBalance').textContent =
+          `${ethers.formatUnits(balance, tokenDecimals)} ${tokenSymbol}`;
+
+        vaultInfo.textContent = [
+          `Owner : ${owner}`,
+          `Votre wallet : ${ownerConnected ? 'propriétaire (actions autorisées)' : 'non-propriétaire (aucune action autorisée)'}`,
+          `Token : ${usdtAddress}`,
+          `Solde : ${ethers.formatUnits(balance, tokenDecimals)} ${tokenSymbol}`,
+          `Déblocage : ${unlockDate}`,
+          `Temps restant : ${Number(timeRemaining)} secondes`,
+          `Verrou actif : ${isActive ? 'Oui' : 'Non'}`
+        ].join('\n');
+
+        await loadTransactionHistory(c, account, owner);
+        setStatus('Soldes et transactions actualisés.');
+        return true;
+      } catch (err) {
+        verifiedContractAddress = null;
+        token = null;
+        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+          document.getElementById(id).disabled = true;
+        }
+        document.getElementById('walletBalance').textContent = '—';
+        document.getElementById('vaultBalance').textContent = '—';
+        setStatus(`Impossible de charger le contrat: ${err?.shortMessage || err?.message || 'Erreur inconnue'}`, true);
+        return false;
+      }
+    }
+
+    async function loadTransactionHistory(c, account, owner) {
+      const deploymentBlock = Number(deployment?.deploymentBlock);
+      if (!Number.isSafeInteger(deploymentBlock) || deploymentBlock < 1) {
+        transactionHistory.textContent =
+          'Historique indisponible : cette adresse n’a pas de bloc de déploiement configuré.';
+        return;
+      }
+
+      try {
+        const endBlock = await provider.getBlockNumber();
+        const entries = [];
+        const accountAddress = ethers.getAddress(account);
+        const isOwner = accountAddress === ethers.getAddress(owner);
+        const chunkSize = Number((await provider.getNetwork()).chainId) === 97 ? 1500 : 10000;
+
+        for (let fromBlock = deploymentBlock; fromBlock <= endBlock; fromBlock += chunkSize) {
+          const toBlock = Math.min(fromBlock + chunkSize - 1, endBlock);
+          const [deposits, withdrawals, locks] = await Promise.all([
+            c.queryFilter(c.filters.Deposited(accountAddress), fromBlock, toBlock),
+            c.queryFilter(c.filters.Withdrawn(accountAddress), fromBlock, toBlock),
+            isOwner
+              ? c.queryFilter(c.filters.Locked(), fromBlock, toBlock)
+              : Promise.resolve([])
+          ]);
+
+          for (const event of deposits) {
+            entries.push({
+              kind: 'Dépôt',
+              amount: `${ethers.formatUnits(event.args.amount, tokenDecimals)} ${tokenSymbol}`,
+              blockNumber: event.blockNumber,
+              index: event.index,
+              hash: event.transactionHash
+            });
+          }
+          for (const event of withdrawals) {
+            entries.push({
+              kind: 'Retrait',
+              amount: `${ethers.formatUnits(event.args.amount, tokenDecimals)} ${tokenSymbol}`,
+              blockNumber: event.blockNumber,
+              index: event.index,
+              hash: event.transactionHash
+            });
+          }
+          for (const event of locks) {
+            entries.push({
+              kind: 'Verrouillage',
+              amount: `${event.args.duration.toString()} secondes`,
+              blockNumber: event.blockNumber,
+              index: event.index,
+              hash: event.transactionHash
+            });
+          }
+        }
+
+        entries.sort((a, b) => b.blockNumber - a.blockNumber || b.index - a.index);
+        transactionHistory.replaceChildren();
+        if (entries.length === 0) {
+          transactionHistory.textContent = 'Aucune transaction trouvée pour ce wallet sur ce vault.';
+          return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'history-list';
+        for (const entry of entries) {
+          const block = await provider.getBlock(entry.blockNumber);
+          const row = document.createElement('div');
+          row.className = 'history-item';
+
+          const details = document.createElement('span');
+          details.textContent =
+            `${entry.kind} · ${entry.amount} · ${block ? new Date(Number(block.timestamp) * 1000).toLocaleString() : `Bloc ${entry.blockNumber}`}`;
+          row.append(details);
+
+          const link = document.createElement('a');
+          link.href = `https://bscscan.com/tx/${entry.hash}`;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = `${entry.hash.slice(0, 10)}…`;
+          row.append(link);
+          list.append(row);
+        }
+        transactionHistory.append(list);
+      } catch (err) {
+        transactionHistory.textContent =
+          `Impossible de charger l’historique depuis le RPC : ${err?.shortMessage || err?.message || 'erreur inconnue'}`;
+      }
+    }
+
+    async function approveAndDeposit() {
+      const contractAddress = getContractAddress();
+      const amountInput = document.getElementById('depositAmount').value;
+
+      if (!contractAddress) {
+        setStatus('Renseignez ou déployez le contrat Magellan.', true);
+        return;
+      }
+      if (!amountInput || Number(amountInput) <= 0) {
+        setStatus('Entrez un montant de dépôt valide.', true);
+        return;
+      }
+
+      if (!signer) {
+        setStatus('Connectez d’abord MetaMask.', true);
+        return;
+      }
+
+      try {
+        await assertMainnet();
+        token = null;
+        if (!await loadContract()) return;
+        const amount = ethers.parseUnits(amountInput, tokenDecimals);
+
+        const allowance = await token.allowance(await signer.getAddress(), contractAddress);
+        if (allowance < amount) {
+          setStatus('Approbation en cours du token USDT...');
+          const approveTx = await token.approve(contractAddress, amount);
+          await approveTx.wait();
+        }
+
+        const vault = new ethers.Contract(contractAddress, MAGELLAN_ABI, signer);
+        setStatus('Dépôt en cours...');
+        const tx = await vault.deposit(amount);
+        await tx.wait();
+        setStatus('Dépôt effectué avec succès.');
+        await loadContract();
+      } catch (err) {
+        const reason = err?.shortMessage || err?.message || 'Erreur pendant le dépôt.';
+        setStatus(reason, true);
+      }
+    }
+
+    async function lock() {
+      const c = getContract();
+      if (!c) return;
+
+      const durationInput = document.getElementById('lockDuration').value;
+      if (!durationInput || !/^\d+$/.test(durationInput) || BigInt(durationInput) <= 0n) {
+        setStatus('Entrez une durée entière strictement positive.', true);
+        return;
+      }
+      const duration = BigInt(durationInput) * BigInt(document.getElementById('lockUnit').value);
+      if (duration > BigInt(MAX_LOCK_DURATION)) {
+        setStatus('La durée maximale autorisée est de cinq ans.', true);
+        return;
+      }
+
+      try {
+        await assertMainnet();
+        const tx = await c.lock(duration);
+        setStatus('Verrouillage en cours...');
+        await tx.wait();
+        setStatus('Verrouillage programmé avec succès.');
+        await loadContract();
+      } catch (err) {
+        setStatus(err?.shortMessage || err?.message || 'Erreur pendant le verrouillage.', true);
+      }
+    }
+
+    async function withdraw() {
+      const c = getContract();
+      if (!c) return;
+
+      const amount = document.getElementById('withdrawAmount').value;
+      if (!amount || Number(amount) <= 0) {
+        setStatus('Entrez un montant de retrait valide.', true);
+        return;
+      }
+
+      try {
+        await assertMainnet();
+        token = null;
+        if (!await loadContract()) return;
+        const tx = await c.withdraw(ethers.parseUnits(amount, tokenDecimals));
+        setStatus('Retrait en cours...');
+        await tx.wait();
+        setStatus('Retrait exécuté avec succès.');
+        await loadContract();
+      } catch (err) {
+        setStatus(err?.shortMessage || err?.message || 'Erreur pendant le retrait.', true);
+      }
+    }
+
+    document.getElementById('connectBtn').addEventListener('click', connectWallet);
+    document.getElementById('contractAddress').addEventListener('input', () => {
+      verifiedContractAddress = null;
+      token = null;
+    });
+    document.getElementById('networkBtn').addEventListener('click', async () => {
+      try {
+        await loadDeploymentConfig();
+        await ensureConfiguredNetwork();
+        if (window.ethereum) await window.ethereum.request({ method: 'eth_requestAccounts' });
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        walletInfo.textContent = `Connecté : ${address}`;
+        if (getContractAddress()) await loadContract();
+        setStatus(`${selectedNetwork().chainName} activé.`);
+      } catch (err) {
+        setStatus(err.message, true);
+      }
+    });
+    document.getElementById('loadContractBtn').addEventListener('click', loadContract);
+    document.getElementById('approveDepositBtn').addEventListener('click', approveAndDeposit);
+    document.getElementById('lockBtn').addEventListener('click', lock);
+    document.getElementById('withdrawBtn').addEventListener('click', withdraw);
+    document.getElementById('refreshBtn').addEventListener('click', loadContract);
+
+    if (window.ethereum) {
+      window.ethereum.on('chainChanged', () => {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = null;
+        token = null;
+        verifiedContractAddress = null;
+        document.getElementById('walletBalance').textContent = '—';
+        document.getElementById('vaultBalance').textContent = '—';
+        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+          document.getElementById(id).disabled = true;
+        }
+        walletInfo.textContent = 'Réseau modifié. Reconnectez MetaMask.';
+      });
+      window.ethereum.on('accountsChanged', async () => {
+        signer = null;
+        token = null;
+        document.getElementById('walletBalance').textContent = '—';
+        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+          document.getElementById(id).disabled = true;
+        }
+        walletInfo.textContent = 'Compte modifié. Reconnectez MetaMask.';
+      });
+    }
+
+    loadDeploymentConfig();
+  </script>
+</body>
+</html>

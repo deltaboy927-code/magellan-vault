@@ -1,0 +1,31 @@
+{
+  "name": "magellan-vault",
+  "version": "1.0.0",
+  "description": "Magellan smart contract for locking USDT on BNB Smart Chain",
+  "private": true,
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network bscMainnet",
+    "configure:frontend": "node scripts/configure-frontend.js",
+    "start": "python3 -m http.server 8000 --directory app",
+    "check": "npm test && npm run compile"
+  },
+  "keywords": [
+    "hardhat",
+    "solidity",
+    "bnb",
+    "usdt",
+    "vault"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.28.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "dotenv": "^18.0.8",
+    "ethers": "^6.17.0"
+  }
+}

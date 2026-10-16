@@ -351,9 +351,11 @@
     const MAINNET_CHAIN_ID = 56;
     const MAX_LOCK_DURATION = 5 * 365 * 24 * 60 * 60;
     const DEPLOYMENT_URL = './deployment.json';
+    const HISTORY_RPC_URL = 'https://bsc-rpc.publicnode.com';
     let deployment = null;
 
     let provider;
+    let historyProvider;
     let signer;
     let contract;
     let token;
@@ -591,19 +593,32 @@
       }
 
       try {
-        const endBlock = await provider.getBlockNumber();
+        historyProvider ||= new ethers.JsonRpcProvider(HISTORY_RPC_URL, MAINNET_CHAIN_ID, {
+          batchMaxCount: 1
+        });
+        const historyNetwork = await historyProvider.getNetwork();
+        if (Number(historyNetwork.chainId) !== MAINNET_CHAIN_ID) {
+          throw new Error('Le RPC d’historique n’est pas sur BNB Mainnet.');
+        }
+
+        const historyContract = new ethers.Contract(
+          await c.getAddress(),
+          MAGELLAN_ABI,
+          historyProvider
+        );
+        const endBlock = await historyProvider.getBlockNumber();
         const entries = [];
         const accountAddress = ethers.getAddress(account);
         const isOwner = accountAddress === ethers.getAddress(owner);
-        const chunkSize = Number((await provider.getNetwork()).chainId) === 97 ? 1500 : 10000;
+        const chunkSize = 1000;
 
         for (let fromBlock = deploymentBlock; fromBlock <= endBlock; fromBlock += chunkSize) {
           const toBlock = Math.min(fromBlock + chunkSize - 1, endBlock);
           const [deposits, withdrawals, locks] = await Promise.all([
-            c.queryFilter(c.filters.Deposited(accountAddress), fromBlock, toBlock),
-            c.queryFilter(c.filters.Withdrawn(accountAddress), fromBlock, toBlock),
+            historyContract.queryFilter(historyContract.filters.Deposited(accountAddress), fromBlock, toBlock),
+            historyContract.queryFilter(historyContract.filters.Withdrawn(accountAddress), fromBlock, toBlock),
             isOwner
-              ? c.queryFilter(c.filters.Locked(), fromBlock, toBlock)
+              ? historyContract.queryFilter(historyContract.filters.Locked(), fromBlock, toBlock)
               : Promise.resolve([])
           ]);
 
@@ -646,7 +661,7 @@
         const list = document.createElement('div');
         list.className = 'history-list';
         for (const entry of entries) {
-          const block = await provider.getBlock(entry.blockNumber);
+          const block = await historyProvider.getBlock(entry.blockNumber);
           const row = document.createElement('div');
           row.className = 'history-item';
 

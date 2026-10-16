@@ -23,6 +23,7 @@ Un transfert ERC-20 direct à l'adresse du contrat peut toujours être fait par 
 L'interface est un site statique : les transactions sont signées dans le wallet du propriétaire, pas sur un serveur. Le site publié est accessible publiquement; seuls les appels autorisés par le contrat peuvent toutefois modifier le coffre.
 
 Le workflow `.github/workflows/pages.yml` publie automatiquement le contenu de `app/` sur GitHub Pages à chaque push sur `main`.
+L'historique des événements est lu en lecture seule via le RPC public BNB de PublicNode, indépendamment du RPC du wallet; les transactions restent signées par le wallet connecté.
 
 1. Crée un dépôt GitHub et pousse le projet sur la branche `main`. Vérifie que `.env` et toute clé privée restent hors du dépôt; le `.gitignore` exclut `.env`.
 2. Dans le dépôt GitHub, ouvre **Settings → Pages** et choisis **GitHub Actions** comme source de publication.

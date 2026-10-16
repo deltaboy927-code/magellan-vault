@@ -30,6 +30,8 @@ L'historique des événements est lu en lecture seule via le RPC public BNB de P
 3. Le workflow publiera le site. Son adresse sera généralement `https://<utilisateur>.github.io/<nom-du-depot>/`.
 4. Après déploiement du contrat, ajoute `app/deployment.json` au dépôt et pousse-le sur `main`. Ce fichier contient des informations publiques (adresses, bloc et hash du bytecode), jamais de clé privée. Sans lui, l'interface reste en mode non configuré et les actions sont désactivées.
 
+Le bouton « Déposer et programmer le verrou » guide le propriétaire à travers l'approbation éventuelle, le dépôt, puis le verrouillage. Ce sont des transactions séparées, chacune à confirmer dans le wallet; si le dépôt réussit mais que le verrouillage est refusé ou échoue, les fonds restent dans le coffre. Le contrat rejette tout retrait tant que le verrou est actif; les tests Hardhat couvrent ce cas sans risquer de fonds mainnet.
+
 Si le contrat est déployé avec Remix, relève l'adresse du contrat créé et le numéro de bloc de sa transaction de création, puis lance en local :
 
 ```bash

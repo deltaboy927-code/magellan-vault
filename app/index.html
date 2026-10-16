@@ -270,7 +270,8 @@
         <label for="depositAmount">Montant USDT</label>
         <input id="depositAmount" type="number" step="0.01" placeholder="1000" />
         <button class="primary" id="approveDepositBtn" disabled>Approuver + déposer</button>
-        <div class="small" style="margin-top:10px;">Les dépôts sont mutualisés. Seul le propriétaire du contrat peut verrouiller ou retirer le solde commun.</div>
+        <button class="secondary" id="depositAndLockBtn" disabled style="margin-top:10px;">Déposer et programmer le verrou</button>
+        <div class="small" style="margin-top:10px;">Pour le parcours guidé, saisis aussi la durée dans la carte Verrouiller. Le wallet demandera séparément l’approbation (si nécessaire), le dépôt, puis le verrouillage. Si tu refuses le verrouillage après le dépôt, les fonds resteront dans le coffre sans nouveau verrou.</div>
       </div>
 
       <div class="card">
@@ -545,7 +546,7 @@
         tokenDecimals = Number(decimals);
         tokenSymbol = symbol;
         const ownerConnected = ethers.getAddress(account) === ethers.getAddress(owner);
-        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+        for (const id of ['approveDepositBtn', 'depositAndLockBtn', 'lockBtn', 'withdrawBtn']) {
           document.getElementById(id).disabled = !ownerConnected;
         }
         if (deployment?.tokenAddress && ethers.getAddress(deployment.tokenAddress) !== ethers.getAddress(usdtAddress)) {
@@ -574,7 +575,7 @@
       } catch (err) {
         verifiedContractAddress = null;
         token = null;
-        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+        for (const id of ['approveDepositBtn', 'depositAndLockBtn', 'lockBtn', 'withdrawBtn']) {
           document.getElementById(id).disabled = true;
         }
         document.getElementById('walletBalance').textContent = '—';
@@ -728,6 +729,89 @@
       }
     }
 
+    async function depositAndLock() {
+      const contractAddress = getContractAddress();
+      const amountInput = document.getElementById('depositAmount').value;
+      const durationInput = document.getElementById('lockDuration').value;
+      const lockUnit = BigInt(document.getElementById('lockUnit').value);
+
+      if (!amountInput || Number(amountInput) <= 0) {
+        setStatus('Entrez un montant de dépôt valide.', true);
+        return;
+      }
+      if (!durationInput || !/^\d+$/.test(durationInput) || BigInt(durationInput) <= 0n) {
+        setStatus('Entrez une durée entière strictement positive.', true);
+        return;
+      }
+
+      const duration = BigInt(durationInput) * lockUnit;
+      if (duration > BigInt(MAX_LOCK_DURATION)) {
+        setStatus('La durée maximale autorisée est de cinq ans.', true);
+        return;
+      }
+      if (!signer || !contractAddress) {
+        setStatus('Connectez le wallet propriétaire et chargez le contrat vérifié.', true);
+        return;
+      }
+      if (!window.confirm(
+        'Cette action nécessite jusqu’à trois confirmations distinctes dans le wallet. ' +
+        'Si le dépôt est confirmé mais que tu refuses ou que le verrouillage échoue, ' +
+        'les fonds resteront dans le coffre sans nouveau verrou. Continuer ?'
+      )) return;
+
+      let depositConfirmed = false;
+      try {
+        await assertMainnet();
+        token = null;
+        if (!await loadContract()) return;
+
+        const vault = getContract();
+        const [account, owner, lockActive] = await Promise.all([
+          signer.getAddress(),
+          vault.owner(),
+          vault.isLockActive()
+        ]);
+        if (ethers.getAddress(account) !== ethers.getAddress(owner)) {
+          throw new Error('Seul le propriétaire du coffre peut déposer et programmer le verrou.');
+        }
+        if (lockActive) {
+          throw new Error('Un verrou est déjà actif. Aucun dépôt n’a été effectué par ce parcours.');
+        }
+
+        const amount = ethers.parseUnits(amountInput, tokenDecimals);
+        if (amount <= 0n) throw new Error('Le montant doit être supérieur à zéro.');
+        const walletBalance = await token.balanceOf(account);
+        if (amount > walletBalance) throw new Error('Le montant dépasse le solde USDT de ce wallet.');
+
+        const allowance = await token.allowance(account, contractAddress);
+        if (allowance < amount) {
+          setStatus('Étape 1/3 : confirme l’approbation USDT dans ton wallet...');
+          const approveTx = await token.approve(contractAddress, amount);
+          await approveTx.wait();
+        }
+
+        setStatus('Étape 2/3 : confirme le dépôt USDT dans ton wallet...');
+        const depositTx = await vault.deposit(amount);
+        await depositTx.wait();
+        depositConfirmed = true;
+
+        setStatus('Étape 3/3 : confirme le verrouillage dans ton wallet...');
+        const lockTx = await vault.lock(duration);
+        await lockTx.wait();
+
+        await loadContract();
+        setStatus('Dépôt confirmé et verrouillage programmé. Vérifie le solde et l’échéance ci-dessous.');
+      } catch (err) {
+        const reason = err?.shortMessage || err?.message || 'Erreur pendant le dépôt et le verrouillage.';
+        if (depositConfirmed) {
+          await loadContract();
+          setStatus(`Le dépôt est confirmé, mais le verrouillage n’a pas été confirmé. Les fonds sont dans le coffre : ${reason}`, true);
+        } else {
+          setStatus(reason, true);
+        }
+      }
+    }
+
     async function lock() {
       const c = getContract();
       if (!c) return;
@@ -801,6 +885,7 @@
     });
     document.getElementById('loadContractBtn').addEventListener('click', loadContract);
     document.getElementById('approveDepositBtn').addEventListener('click', approveAndDeposit);
+    document.getElementById('depositAndLockBtn').addEventListener('click', depositAndLock);
     document.getElementById('lockBtn').addEventListener('click', lock);
     document.getElementById('withdrawBtn').addEventListener('click', withdraw);
     document.getElementById('refreshBtn').addEventListener('click', loadContract);
@@ -813,7 +898,7 @@
         verifiedContractAddress = null;
         document.getElementById('walletBalance').textContent = '—';
         document.getElementById('vaultBalance').textContent = '—';
-        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+        for (const id of ['approveDepositBtn', 'depositAndLockBtn', 'lockBtn', 'withdrawBtn']) {
           document.getElementById(id).disabled = true;
         }
         walletInfo.textContent = 'Réseau modifié. Reconnectez MetaMask.';
@@ -822,7 +907,7 @@
         signer = null;
         token = null;
         document.getElementById('walletBalance').textContent = '—';
-        for (const id of ['approveDepositBtn', 'lockBtn', 'withdrawBtn']) {
+        for (const id of ['approveDepositBtn', 'depositAndLockBtn', 'lockBtn', 'withdrawBtn']) {
           document.getElementById(id).disabled = true;
         }
         walletInfo.textContent = 'Compte modifié. Reconnectez MetaMask.';
